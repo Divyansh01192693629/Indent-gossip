@@ -8,6 +8,7 @@ function CreatePost({ fetchPosts, user }) {
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const { isDarkMode } = useContext(ThemeContext);
+  const API = process.env.REACT_APP_API_URL;
 
   const handlePost = async () => {
     if (!content && !image) {
@@ -20,15 +21,12 @@ function CreatePost({ fetchPosts, user }) {
       const formData = new FormData();
       formData.append("image", image);
 
-      const res = await axios.post(
-        "http://localhost:5000/upload-image",
-        formData,
-      );
+      const res = await axios.post(`${API}/upload-image`, formData);
 
       image_url = res.data.image_url;
     }
 
-    await axios.post("http://localhost:5000/create-post", {
+    await axios.post(`${API}/create-post`, {
       content,
       image_url,
       user_id: user.id,
@@ -153,13 +151,15 @@ function CreatePost({ fetchPosts, user }) {
             e.currentTarget.style.background = isDarkMode
               ? "rgba(0, 212, 255, 0.2)"
               : "rgba(0, 0, 0, 0.15)";
-            e.currentTarget.style.transform = "perspective(800px) rotateY(-5deg) translateY(-2px)";
+            e.currentTarget.style.transform =
+              "perspective(800px) rotateY(-5deg) translateY(-2px)";
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = isDarkMode
               ? "rgba(0, 212, 255, 0.1)"
               : "rgba(0, 0, 0, 0.1)";
-            e.currentTarget.style.transform = "perspective(800px) rotateY(0deg)";
+            e.currentTarget.style.transform =
+              "perspective(800px) rotateY(0deg)";
           }}
         >
           🖼️ Add Image
@@ -172,7 +172,13 @@ function CreatePost({ fetchPosts, user }) {
         </label>
 
         {image && (
-          <div style={{ fontSize: "13px", color: "#00d4ff", animation: "slideIn 0.3s ease" }}>
+          <div
+            style={{
+              fontSize: "13px",
+              color: "#00d4ff",
+              animation: "slideIn 0.3s ease",
+            }}
+          >
             ✓ {image.name}
           </div>
         )}
@@ -216,7 +222,8 @@ function CreatePost({ fetchPosts, user }) {
             transform: "perspective(800px) rotateX(0deg)",
           }}
           onMouseEnter={(e) => {
-            e.target.style.transform = "perspective(800px) rotateX(-3deg) translateY(-2px)";
+            e.target.style.transform =
+              "perspective(800px) rotateX(-3deg) translateY(-2px)";
             e.target.style.boxShadow = "0 6px 16px rgba(168, 85, 247, 0.4)";
           }}
           onMouseLeave={(e) => {
