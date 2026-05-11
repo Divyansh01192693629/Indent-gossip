@@ -1,136 +1,146 @@
-* {
-  box-sizing: border-box;
+/* =====================================================
+   INDENT GOSSIP — 3D & THEME AWARE DESIGN SYSTEM
+   ===================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@500;700;800;900&display=swap');
+
+/* Default (Dark Mode) */
+:root {
+  --bg-color: #0d0d23;
+  --text: #ccd6f6;
+  --text-muted: #6272a4;
+  --card-bg: rgba(13, 13, 35, 0.75);
+  --border: rgba(0, 212, 255, 0.1);
+  --border-light: rgba(255, 255, 255, 0.03);
+  --accent: #00d4ff;
+  --accent-bg: rgba(0, 212, 255, 0.1);
+  --accent-purple: #a855f7;
+  --accent-red: #ff6b6b;
+  --accent-red-bg: rgba(255, 107, 107, 0.1);
 }
 
-button,
-span {
-  cursor: pointer;
-}
-
-.App {
-  text-align: center;
+/* Light Mode Overrides */
+[data-theme='light'] {
+  --bg-color: #f0f4f8;
+  --text: #111827;
+  --text-muted: #6b7280;
+  --card-bg: rgba(255, 255, 255, 0.85);
+  --border: rgba(0, 0, 0, 0.08);
+  --border-light: rgba(0, 0, 0, 0.03);
+  --accent: #0284c7;  /* Darker blue for light mode contrast */
+  --accent-bg: rgba(2, 132, 199, 0.1);
+  --accent-purple: #7e22ce;
+  --accent-red: #dc2626;
+  --accent-red-bg: rgba(220, 38, 38, 0.1);
+  
+  /* Additional Light Mode Global Changes */
+  body {
+    background: radial-gradient(circle at 50% 0%, #e0e7ff 0%, var(--bg-color) 100%);
+  }
 }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
-  background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 50%, #16213e 100%);
-  color: white;
-  min-height: 100vh;
+  padding: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  color: var(--text);
+  background-color: var(--bg-color);
+  background-image: 
+    radial-gradient(circle at 15% 50%, rgba(0, 212, 255, 0.08), transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.08), transparent 25%);
+  background-attachment: fixed;
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* layout */
-.main-container {
-  display: flex;
-  justify-content: center;
-  gap: 30px;
-  padding: 30px 20px;
-  max-width: 1400px;
-  margin: 0 auto;
+/* Base resets */
+* {
+  box-sizing: border-box;
 }
 
-/* left + right panels */
-.sidebar {
-  width: 220px;
-  position: sticky;
-  top: 80px;
-  height: fit-content;
+/* Animated Grid Background */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: 
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 50px 50px;
+  background-position: center center;
+  z-index: -1;
+  pointer-events: none;
 }
 
-.sidebar h4 {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 20px;
-  background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+/* Floating Space Dust Animation */
+@keyframes floatUp {
+  0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.5; }
+  90% { opacity: 0.5; }
+  100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
 }
 
-.sidebar p {
-  font-size: 15px;
-  color: #b8b8d1;
-  padding: 12px 15px;
-  margin: 8px 0;
-  border-radius: 8px;
+/* Generic utility animations */
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes floatCard {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-15px) rotate(2deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+@keyframes popBounce {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  50% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; }
+  80% { transform: translate(-50%, -50%) scale(0.9); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+}
+
+/* Loading Spinners */
+.spinner {
+  border: 3px solid rgba(0, 212, 255, 0.2);
+  border-top: 3px solid #00d4ff;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Glassmorphism scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.1);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 212, 255, 0.2);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 212, 255, 0.4);
+}
+
+/* Inputs */
+input, textarea {
   transition: all 0.3s ease;
-  cursor: pointer;
-  transform: perspective(1000px) rotateY(0deg);
 }
-
-.sidebar p:hover {
-  background-color: rgba(0, 212, 255, 0.1);
-  color: #00d4ff;
-  transform: perspective(1000px) rotateY(-5deg) translateX(5px);
-}
-
-.rightbar {
-  width: 260px;
-  position: sticky;
-  top: 80px;
-  height: fit-content;
-}
-
-.rightbar h4 {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 20px;
-  background: linear-gradient(135deg, #ff006e 0%, #fb5607 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.rightbar p {
-  font-size: 14px;
-  color: #b8b8d1;
-  padding: 12px 15px;
-  margin: 10px 0;
-  background: rgba(255, 0, 110, 0.05);
-  border-radius: 8px;
-  border-left: 3px solid #ff006e;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  transform: perspective(1000px) rotateY(0deg);
-}
-
-.rightbar p:hover {
-  background: rgba(255, 0, 110, 0.15);
-  transform: perspective(1000px) rotateY(5deg) translateX(3px);
-}
-
-/* feed */
-.feed {
-  width: 100%;
-  max-width: 550px;
-}
-
-@keyframes pop {
-  0% {
-    transform: scale(0.5) translate(-50%, -50%);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.2) translate(-50%, -50%);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1) translate(-50%, -50%);
-    opacity: 0;
-  }
-}
-
-@media (max-width: 1024px) {
-  .main-container {
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .sidebar,
-  .rightbar {
-    width: 100%;
-    position: static;
-  }
+input:focus, textarea:focus {
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
 }

@@ -10,11 +10,16 @@ export function ThemeProvider({ children }) {
 
   useEffect(() => {
     localStorage.setItem("theme", JSON.stringify(isDarkMode));
+    document.body.setAttribute("data-theme", isDarkMode ? "dark" : "light");
   }, [isDarkMode]);
 
-  const toggleTheme = () => {
-    setIsDarkMode((prev) => !prev);
-  };
+  // Apply on first render
+  useEffect(() => {
+    document.body.setAttribute("data-theme", isDarkMode ? "dark" : "light");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const toggleTheme = () => setIsDarkMode((prev) => !prev);
 
   return (
     <ThemeContext.Provider value={{ isDarkMode, toggleTheme }}>

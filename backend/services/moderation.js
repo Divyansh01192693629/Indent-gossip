@@ -1,132 +1,220 @@
 const axios = require("axios");
-const vision = require("@google-cloud/vision");
 
-// Initialize Google Vision Client
-let client;
-try {
-  client = new vision.ImageAnnotatorClient();
-  console.log("✅ Google Vision API initialized");
-} catch (err) {
-  console.log("⚠️ Google Vision API not available:", err.message);
-}
+const GEMINI_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_BASE =
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
-// 🔥 OPENAI MODERATION API (FREE & POWERFUL)
-const checkTextAI = async (text) => {
-  try {
-    console.log("🔍 Analyzing text with OpenAI Moderation...");
+// Check if Gemini key looks valid (not a placeholder)
+const isGeminiAvailable = () =>
+  GEMINI_KEY &&
+  !GEMINI_KEY.includes("placeYour") &&
+  !GEMINI_KEY.includes("placeholder") &&
+  GEMINI_KEY.length > 20;
 
-    const response = await axios.post(
-      "https://api.openai.com/v1/moderations",
-      {
-        input: text,
-        model: "text-moderation-latest",
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    const result = response.data.results[0];
-    const scores = result.category_scores;
-
-    console.log("📊 Moderation scores:", scores);
-
-    // Check if flagged (high toxicity)
-    if (result.flagged) {
-      // Find which category triggered it
-      let highCategory = "";
-      let highScore = 0;
-      for (let [key, value] of Object.entries(scores)) {
-        if (value > highScore) {
-          highScore = value;
-          highCategory = key;
-        }
-      }
-
-      console.log(`❌ FLAGGED - High ${highCategory}: ${highScore.toFixed(2)}`);
-      return { safe: false, blocked: true, category: highCategory, score: highScore };
-    }
-
-    // Check if moderate toxicity (not flagged but high scores)
-    const maxScore = Math.max(...Object.values(scores));
-    if (maxScore > 0.5) {
-      console.log("⚠️ MODERATE TOXICITY - MASKING");
-      return { safe: false, blocked: false, masked: true, score: maxScore, text: maskText(text) };
-    }
-
-    console.log("✅ Text is clean");
-    return { safe: true, blocked: false, masked: false, score: maxScore, text: text };
-  } catch (err) {
-    console.log("❌ Moderation error:", err.message);
-    // On error, allow post
-    return { safe: true, blocked: false, masked: false, text: text };
-  }
+// ─── Gemini text call ───────────────────────────────────────────────────────
+const callGeminiText = async (prompt) => {
+  const response = await axios.post(
+    `${GEMINI_BASE}?key=${GEMINI_KEY}`,
+    { contents: [{ parts: [{ text: prompt }] }] },
+    { headers: { "Content-Type": "application/json" }, timeout: 10000 }
+  );
+  return response.data.candidates[0].content.parts[0].text.trim();
 };
 
-// 🔥 MASK ABUSIVE WORDS
+// ─── Gemini vision call with image buffer (base64) ──────────────────────────
+const callGeminiImageBuffer = async (buffer, mimeType, prompt) => {
+  const base64 = buffer.toString("base64");
+  const response = await axios.post(
+    `${GEMINI_BASE}?key=${GEMINI_KEY}`,
+    {
+      contents: [
+        {
+          parts: [
+            { text: prompt },
+            { inline_data: { mime_type: mimeType || "image/jpeg", data: base64 } },
+          ],
+        },
+      ],
+    },
+    { headers: { "Content-Type": "application/json" }, timeout: 20000 }
+  );
+  return response.data.candidates[0].content.parts[0].text.trim();
+};
+
+// ─── Local blacklist (fast, no API needed) ──────────────────────────────────
 const maskText = (text) => {
   const abusiveWords = [
-    "fuck", "shit", "bitch", "ass", "cunt", "damn", "bastard", "asshole",
+    "fuck", "shit", "bitch", "cunt", "bastard", "asshole",
     "motherfucker", "dickhead", "moron", "retard", "whore", "slut",
-    "gaand", "maa", "baap", "chutiya", "behenchod", "madarchod",
-    "haramzada", "bhosda", "tharki", "rand", "randi", "bhen ke lund",
-    "lund", "chut", "gadi", "nakli", "hijra", "chakka", "maderchod",
+    "gaand", "chutiya", "behenchod", "madarchod",
+    "haramzada", "bhosda", "tharki", "rand", "randi",
+    "lund", "chut", "hijra", "chakka", "maderchod",
+    "bhosdike", "bhosadike", "harami", "kutiya", "gandu",
+    // short slang
+    " mc ", " bc ", " bkl ", " mf ",
   ];
-
   let masked = text;
   for (let word of abusiveWords) {
-    const regex = new RegExp(`\\b${word}\\b`, "gi");
-    masked = masked.replace(
-      regex,
-      (match) => match[0] + "*".repeat(match.length - 1)
-    );
+    const escaped = word.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`\\b${escaped}\\b`, "gi");
+    masked = masked.replace(regex, (match) => {
+      if (match.length <= 4) return match[0] + "*".repeat(match.length - 1);
+      return match.substring(0, 4) + "*".repeat(match.length - 4);
+    });
   }
   return masked;
 };
 
-// 🔥 IMAGE MODERATION (Google Vision API)
-const checkImageSafety = async (imageUrl) => {
+// ─── TEXT MODERATION ────────────────────────────────────────────────────────
+const checkTextAI = async (text) => {
   try {
-    if (!client) {
-      console.log("⚠️ Google Vision not initialized, skipping image check");
-      return true;
+    // Step 1: Local blacklist always runs first (fast)
+    const localMasked = maskText(text);
+
+    // Step 2: Gemini NLP for deeper context-aware check
+    if (isGeminiAvailable()) {
+      console.log("🔍 Gemini NLP text check...");
+
+      const prompt = `You are a strict content moderator for a social media platform. Analyze the following text for abusive, harassing, or offensive content, including Hindi and Hinglish slang, gaalis, sexual harassment, and hate speech.
+
+Text to analyze: "${text}"
+
+Respond with EXACTLY one of these formats and nothing else:
+- CLEAN  →  text is completely acceptable
+- MASK: <cleaned_version>  →  mild profanity found; replace bad words with asterisks keeping first letter
+- BLOCK  →  severe harassment, sexual abuse, threats, extreme hate speech; must be rejected
+
+Respond in that exact format only.`;
+
+      const result = await callGeminiText(prompt);
+      console.log("🤖 Gemini NLP result:", result.substring(0, 100));
+
+      const upper = result.toUpperCase();
+      if (upper.startsWith("BLOCK")) {
+        return { safe: false, blocked: true, masked: false, text };
+      }
+      if (upper.startsWith("MASK:")) {
+        const maskedText = result.substring(5).trim();
+        return { safe: false, blocked: false, masked: true, text: maskedText };
+      }
+      // CLEAN — still apply local masking as safety net
+      if (localMasked !== text) {
+        return { safe: false, blocked: false, masked: true, text: localMasked };
+      }
+      return { safe: true, blocked: false, masked: false, text };
     }
 
-    console.log("🔍 Checking image safety for:", imageUrl);
+    // Gemini unavailable ─ use local blacklist only
+    console.log("⚠️  Gemini unavailable, using local blacklist");
+    if (localMasked !== text) {
+      return { safe: false, blocked: false, masked: true, text: localMasked };
+    }
+    return { safe: true, blocked: false, masked: false, text };
+  } catch (err) {
+    console.log("❌ Text moderation error:", err.message);
+    // On any error, fall back to local masking (never block on error)
+    const masked = maskText(text);
+    if (masked !== text) {
+      return { safe: false, blocked: false, masked: true, text: masked };
+    }
+    return { safe: true, blocked: false, masked: false, text };
+  }
+};
 
+// ─── IMAGE BUFFER MODERATION (called during upload, before storage) ─────────
+const checkImageBuffer = async (buffer, mimeType) => {
+  if (!isGeminiAvailable()) {
+    console.log("⚠️  Gemini not available — skipping image pre-check");
+    return { safe: true, reason: null };
+  }
+
+  try {
+    console.log("🔍 Gemini Vision — checking image buffer...");
+
+    const prompt = `You are a strict content safety AI for a social media platform. Carefully examine this image.
+
+Reject the image if it contains ANY of these:
+- Nudity, sexual or pornographic content
+- Graphic violence, gore, or injuries
+- Harassment, threatening, or intimidating imagery
+- Hate symbols, racist content, or extremist propaganda
+- Drug use or illegal activity shown explicitly
+
+Reply with EXACTLY one word only:
+SAFE   — if the image is appropriate for all audiences
+UNSAFE — if it violates any rule above
+
+One word only, nothing else.`;
+
+    const result = await callGeminiImageBuffer(buffer, mimeType, prompt);
+    const word = result.trim().toUpperCase().split(/\s/)[0];
+    console.log("🤖 Gemini Vision result:", word);
+
+    if (word === "UNSAFE") {
+      return { safe: false, reason: "Image contains unsafe/abusive content" };
+    }
+    return { safe: true, reason: null };
+  } catch (err) {
+    console.log("❌ Image buffer check error:", err.message);
+    return { safe: true, reason: null }; // Allow on error to avoid blocking users
+  }
+};
+
+// ─── IMAGE URL MODERATION (secondary check at post-creation time) ───────────
+const checkImageSafety = async (imageUrl) => {
+  // Try Google Vision first (if credentials are configured)
+  try {
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = "./my-key.json";
+    const vision = require("@google-cloud/vision");
+    const client = new vision.ImageAnnotatorClient();
     const [result] = await client.safeSearchDetection(imageUrl);
     const safe = result.safeSearchAnnotation;
 
-    console.log("📊 Image safety scores:", {
+    console.log("📊 Google Vision scores:", {
       adult: safe.adult,
       violence: safe.violence,
       racy: safe.racy,
     });
 
-    const isSafe = (
+    const isSafe =
       safe.adult !== "VERY_LIKELY" &&
+      safe.adult !== "LIKELY" &&
+      safe.racy !== "VERY_LIKELY" &&
       safe.violence !== "VERY_LIKELY" &&
-      safe.racy !== "VERY_LIKELY"
-    );
+      safe.violence !== "LIKELY";
 
     if (!isSafe) {
-      console.log("❌ UNSAFE IMAGE BLOCKED - Adult:", safe.adult, "Racy:", safe.racy);
-      return false; // BLOCK unsafe images
+      console.log("❌ Google Vision blocked image — Adult:", safe.adult, "Violence:", safe.violence);
     }
-
-    console.log("✅ Image is safe");
-    return true;
-  } catch (err) {
-    console.log("❌ Image moderation error:", err.message);
-    // On error, REJECT to be safe
-    return false;
+    return isSafe;
+  } catch (visionErr) {
+    console.log("⚠️  Google Vision unavailable:", visionErr.message);
   }
+
+  // Fallback: download and check with Gemini Vision
+  if (isGeminiAvailable()) {
+    try {
+      console.log("🔍 Gemini Vision fallback — checking image URL...");
+      const imgRes = await axios.get(imageUrl, {
+        responseType: "arraybuffer",
+        timeout: 12000,
+      });
+      const buffer = Buffer.from(imgRes.data);
+      const mimeType = imgRes.headers["content-type"] || "image/jpeg";
+      const result = await checkImageBuffer(buffer, mimeType);
+      return result.safe;
+    } catch (geminiErr) {
+      console.log("❌ Gemini Vision fallback error:", geminiErr.message);
+    }
+  }
+
+  // If all checks fail, allow (to not block legitimate users)
+  console.log("⚠️  No image moderation available — allowing image");
+  return true;
 };
 
 module.exports = {
   checkTextAI,
   checkImageSafety,
+  checkImageBuffer, // NEW: used in /upload-image for pre-upload check
 };

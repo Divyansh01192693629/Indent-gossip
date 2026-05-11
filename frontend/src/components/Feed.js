@@ -1,487 +1,276 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import CreatePost from "./CreatePost";
 import PostCard from "./PostCard";
 import Navbar from "./Navbar";
 import Profile from "./Profile";
-import { ThemeContext } from "../context/ThemeContext";
-import "../App.css";
+import axios from "axios";
+import "./Feed.css";
 
-function Feed({ user, setUser }) {
-  const [showCreate, setShowCreate] = useState(false);
-  const [search, setSearch] = useState("");
+const API = process.env.REACT_APP_API_URL;
+
+function Feed({ user, setUser, setCurrentPage }) {
   const [posts, setPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(true);
   const [showProfile, setShowProfile] = useState(false);
-  const [activeMenu, setActiveMenu] = useState("home");
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const { isDarkMode } = useContext(ThemeContext);
-  const API = process.env.REACT_APP_API_URL;
+  const [showCreatePost, setShowCreatePost] = useState(false);
+  const [leftCollapsed, setLeftCollapsed] = useState(false);
+  const [rightCollapsed, setRightCollapsed] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const fetchPosts = () => {
-    fetch(`${API}/posts?user_id=${user.id}`)
-      .then((res) => res.json())
-      .then((data) => setPosts(data));
-  };
+  const fetchPosts = useCallback(async () => {
+    try {
+      const { data } = await axios.get(`${API}/posts?user_id=${user.id}`);
+      setPosts(data);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setPostsLoading(false);
+    }
+  }, [user.id]);
 
   useEffect(() => {
     fetchPosts();
-  }, []);
+    const interval = setInterval(fetchPosts, 5000);
+    return () => clearInterval(interval);
+  }, [fetchPosts]);
 
-  const filteredPosts = posts.filter((post) => {
-    let searchText = search.toLowerCase().trim();
-
-    if (searchText.startsWith("uid-")) {
-      searchText = searchText.replace("uid-", "");
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults(null);
+      return;
     }
+    const delayDebounceFn = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const { data } = await axios.get(`${API}/search?q=${searchQuery}`);
+        setSearchResults(data);
+      } catch (err) {
+        console.log("Search error", err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500);
 
-    searchText = searchText.replace(/^0+/, "");
-
-    return (
-      post.content?.toLowerCase().includes(searchText) ||
-      String(post.uid) === searchText
-    );
-  });
-
-  const menuItems = [
-    { id: "home", label: "Home", icon: "🏠" },
-    { id: "trending", label: "Trending", icon: "🔥" },
-    { id: "saved", label: "Saved", icon: "💾" },
-  ];
-
-  const trendingTopics = [
-    { tag: "#college", posts: 1250 },
-    { tag: "#fun", posts: 892 },
-    { tag: "#confession", posts: 2341 },
-    { tag: "#relationship", posts: 1876 },
-    { tag: "#anonymous", posts: 3245 },
-  ];
-
-  const sidebarStyle = {
-    width: "220px",
-    position: "sticky",
-    top: "80px",
-    height: "fit-content",
-  };
-
-  const menuItemStyle = (isActive) => ({
-    padding: "14px 16px",
-    margin: "8px 0",
-    borderRadius: "10px",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    fontSize: "15px",
-    fontWeight: "500",
-    transition: "all 0.3s ease",
-    background: isActive
-      ? isDarkMode
-        ? "rgba(0, 212, 255, 0.15)"
-        : "rgba(0, 212, 255, 0.1)"
-      : "transparent",
-    color: isActive
-      ? isDarkMode
-        ? "#00d4ff"
-        : "#0099cc"
-      : isDarkMode
-        ? "#b8b8d1"
-        : "#666",
-    borderLeft: isActive
-      ? `4px solid ${isDarkMode ? "#00d4ff" : "#0099cc"}`
-      : "4px solid transparent",
-  });
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
 
   return (
-    <>
+    <div style={{ minHeight: "100vh", position: "relative" }}>
       <Navbar
         setUser={setUser}
-        search={search}
-        setSearch={setSearch}
-        setShowCreate={setShowCreate}
-        setShowMobileMenu={setShowMobileMenu}
         showMobileMenu={showMobileMenu}
+        setShowMobileMenu={setShowMobileMenu}
+        user={user}
+        setCurrentPage={setCurrentPage}
+        setShowProfile={setShowProfile}
+        onSearch={setSearchQuery}
       />
-      {showCreate && <CreatePost fetchPosts={fetchPosts} user={user} />}
-      {showProfile && <Profile user={user} setShowProfile={setShowProfile} />}
 
-      <div className="main-container">
-        {/* MOBILE MENU DRAWER */}
-        {window.innerWidth < 768 && showMobileMenu && (
-          <div
-            style={{
-              position: "fixed",
-              top: "70px",
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: isDarkMode
-                ? "linear-gradient(135deg, rgba(15,15,30,0.98) 0%, rgba(26,26,46,0.98) 100%)"
-                : "linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(245,245,245,0.98) 100%)",
-              zIndex: 999,
-              display: "flex",
-              flexDirection: "column",
-              padding: "20px",
-              overflowY: "auto",
-              borderRight: isDarkMode
-                ? "1px solid rgba(0,212,255,0.1)"
-                : "1px solid rgba(0,0,0,0.1)",
-            }}
-            onClick={() => setShowMobileMenu(false)}
-          >
-            {/* Menu Items */}
-            <h4
-              style={{
-                marginTop: 0,
-                marginBottom: "16px",
-                color: isDarkMode ? "#00d4ff" : "#0099cc",
-              }}
-            >
-              ✨ Menu
-            </h4>
-            {menuItems.map((item) => (
-              <div
-                key={item.id}
-                style={{
-                  padding: "14px 16px",
-                  margin: "8px 0",
-                  borderRadius: "10px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  fontSize: "15px",
-                  fontWeight: "500",
-                  transition: "all 0.3s ease",
-                  background:
-                    activeMenu === item.id
-                      ? isDarkMode
-                        ? "rgba(0, 212, 255, 0.15)"
-                        : "rgba(0, 212, 255, 0.1)"
-                      : "transparent",
-                  color:
-                    activeMenu === item.id
-                      ? isDarkMode
-                        ? "#00d4ff"
-                        : "#0099cc"
-                      : isDarkMode
-                        ? "#b8b8d1"
-                        : "#666",
-                  borderLeft:
-                    activeMenu === item.id
-                      ? `4px solid ${isDarkMode ? "#00d4ff" : "#0099cc"}`
-                      : "4px solid transparent",
-                }}
-                onClick={() => {
-                  setActiveMenu(item.id);
-                  setShowMobileMenu(false);
-                }}
-              >
-                <span style={{ fontSize: "20px" }}>{item.icon}</span>
-                <span>{item.label}</span>
-              </div>
-            ))}
-
-            {/* Profile */}
-            <div
-              style={{
-                marginTop: "16px",
-                paddingTop: "16px",
-                borderTop: isDarkMode
-                  ? "1px solid rgba(0,212,255,0.1)"
-                  : "1px solid rgba(0,0,0,0.1)",
-              }}
-            >
-              <div
-                style={{
-                  padding: "12px 16px",
-                  borderRadius: "10px",
-                  background: isDarkMode
-                    ? "rgba(0, 212, 255, 0.1)"
-                    : "rgba(0, 212, 255, 0.08)",
-                  cursor: "pointer",
-                }}
-                onClick={() => {
-                  setShowProfile(true);
-                  setShowMobileMenu(false);
-                }}
-              >
-                <div style={{ fontSize: "20px", marginBottom: "8px" }}>👤</div>
-                <div style={{ fontSize: "13px", fontWeight: "600" }}>
-                  My Profile
-                </div>
-              </div>
+      <div className="feed-layout">
+        {/* Left Sidebar */}
+        <div className={`feed-column-left ${leftCollapsed ? "collapsed" : ""}`}>
+          <div className="glass-panel" style={{ padding: 12 }}>
+            <div className="panel-header" style={{ padding: "8px 12px", marginBottom: 8 }}>
+              <h3 className="panel-title">Navigation</h3>
+              <button className="close-panel-btn" onClick={() => setLeftCollapsed(true)} title="Close Panel">✕</button>
             </div>
-
-            {/* Trending */}
-            <h4
-              style={{
-                marginTop: "24px",
-                marginBottom: "12px",
-                color: "#ff006e",
-              }}
-            >
-              🔥 Trending
-            </h4>
-            {trendingTopics.map((topic, i) => (
-              <div
-                key={i}
-                onClick={() => {
-                  setSearch(topic.tag);
-                  setShowMobileMenu(false);
-                }}
-                style={{
-                  padding: "12px 15px",
-                  margin: "8px 0",
-                  background: isDarkMode
-                    ? "rgba(255, 0, 110, 0.05)"
-                    : "rgba(255, 0, 110, 0.08)",
-                  border: isDarkMode
-                    ? "1px solid rgba(255, 0, 110, 0.15)"
-                    : "1px solid rgba(255, 0, 110, 0.2)",
-                  borderLeft: `4px solid #ff006e`,
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                }}
-              >
-                <div
-                  style={{
-                    fontWeight: "600",
-                    color: "#ff006e",
-                    fontSize: "14px",
-                  }}
-                >
-                  {topic.tag}
-                </div>
-                <div
-                  style={{ fontSize: "12px", opacity: 0.6, marginTop: "4px" }}
-                >
-                  {topic.posts} posts
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* LEFT SIDEBAR - Hide on mobile */}
-        {window.innerWidth >= 768 && (
-          <div style={sidebarStyle}>
-            <h4
-              style={{
-                fontSize: "18px",
-                fontWeight: "600",
-                marginBottom: "16px",
-                background: "linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)",
-                backgroundClip: "text",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              ✨ Menu
-            </h4>
-
-            {menuItems.map((item) => (
-              <div
-                key={item.id}
-                style={menuItemStyle(activeMenu === item.id)}
-                onClick={() => setActiveMenu(item.id)}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = isDarkMode
-                    ? "rgba(0, 212, 255, 0.1)"
-                    : "rgba(0, 0, 0, 0.05)";
-                  e.currentTarget.style.transform = "translateX(4px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background =
-                    activeMenu === item.id
-                      ? isDarkMode
-                        ? "rgba(0, 212, 255, 0.15)"
-                        : "rgba(0, 212, 255, 0.1)"
-                      : "transparent";
-                  e.currentTarget.style.transform = "translateX(0)";
-                }}
-              >
-                <span style={{ fontSize: "20px" }}>{item.icon}</span>
-                <span>{item.label}</span>
-              </div>
-            ))}
-
-            <div
-              style={{
-                marginTop: "24px",
-                padding: "12px 16px",
-                borderRadius: "10px",
-                background: isDarkMode
-                  ? "rgba(0, 212, 255, 0.1)"
-                  : "rgba(0, 212, 255, 0.08)",
-                border: isDarkMode
-                  ? "1px solid rgba(0, 212, 255, 0.2)"
-                  : "1px solid rgba(0, 0, 0, 0.1)",
-                cursor: "pointer",
-                transition: "all 0.3s ease",
-              }}
-              onClick={() => setShowProfile(true)}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = isDarkMode
-                  ? "rgba(0, 212, 255, 0.2)"
-                  : "rgba(0, 212, 255, 0.15)";
-                e.currentTarget.style.transform = "translateX(4px)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = isDarkMode
-                  ? "rgba(0, 212, 255, 0.1)"
-                  : "rgba(0, 212, 255, 0.08)";
-                e.currentTarget.style.transform = "translateX(0)";
-              }}
-            >
-              <div style={{ fontSize: "20px", marginBottom: "8px" }}>👤</div>
-              <div style={{ fontSize: "13px", fontWeight: "600" }}>
-                My Profile
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* FEED */}
-        <div className="feed">
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
-            {filteredPosts.length > 0 ? (
-              filteredPosts.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  fetchPosts={fetchPosts}
-                  user={user}
-                />
-              ))
-            ) : (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "60px 20px",
-                  color: isDarkMode ? "#888" : "#999",
-                }}
-              >
-                <div style={{ fontSize: "48px", marginBottom: "16px" }}>📭</div>
-                <div style={{ fontSize: "16px", fontWeight: "600" }}>
-                  {search ? "No posts found" : "No posts yet"}
-                </div>
-                <div style={{ fontSize: "14px", marginTop: "8px" }}>
-                  {search
-                    ? "Try a different search"
-                    : "Be the first to share a confession!"}
-                </div>
-              </div>
-            )}
+            
+            <button className="nav-menu-item active">🏠 Feed</button>
+            <button className="nav-menu-item">🌍 Explore</button>
+            <button className="nav-menu-item">🔔 Notifications</button>
+            <button className="nav-menu-item">🔖 Bookmarks</button>
+            <button className="nav-menu-item" onClick={() => setCurrentPage("chat")}>💬 Chat</button>
           </div>
         </div>
 
-        {/* RIGHT SIDEBAR - Hide on mobile */}
-        {window.innerWidth >= 768 && (
-          <div style={sidebarStyle}>
-            <h4
-              style={{
-                fontSize: "18px",
-                fontWeight: "600",
-                marginBottom: "16px",
-                background: "linear-gradient(135deg, #ff006e 0%, #fb5607 100%)",
-                backgroundClip: "text",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              🔥 Trending
-            </h4>
+        {/* Center Feed */}
+        <div className="feed-column-center">
+          {/* Main Feed Layout */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
-            {trendingTopics.map((topic, i) => (
-              <div
-                key={i}
-                onClick={() => setSearch(topic.tag)}
-                style={{
-                  padding: "12px 15px",
-                  margin: "10px 0",
-                  background: isDarkMode
-                    ? "rgba(255, 0, 110, 0.05)"
-                    : "rgba(255, 0, 110, 0.08)",
-                  border: isDarkMode
-                    ? "1px solid rgba(255, 0, 110, 0.15)"
-                    : "1px solid rgba(255, 0, 110, 0.2)",
-                  borderLeft: `4px solid ${isDarkMode ? "#ff006e" : "#ff006e"}`,
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  transition: "all 0.3s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = isDarkMode
-                    ? "rgba(255, 0, 110, 0.1)"
-                    : "rgba(255, 0, 110, 0.15)";
-                  e.currentTarget.style.transform = "translateX(3px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = isDarkMode
-                    ? "rgba(255, 0, 110, 0.05)"
-                    : "rgba(255, 0, 110, 0.08)";
-                  e.currentTarget.style.transform = "translateX(0)";
-                }}
-              >
-                <div
-                  style={{
-                    fontWeight: "600",
-                    color: isDarkMode ? "#ff006e" : "#ff006e",
-                    fontSize: "14px",
-                  }}
-                >
-                  {topic.tag}
+        {/* Inline Create Post toggle */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 28, fontWeight: 800, margin: 0, color: "var(--text)" }}>Feed</h2>
+          <button
+            onClick={() => setShowCreatePost(!showCreatePost)}
+            style={{
+              background: showCreatePost ? "var(--accent-red-bg)" : "var(--accent-bg)",
+              color: showCreatePost ? "var(--accent-red)" : "var(--accent)", border: "none",
+              borderRadius: 12, padding: "8px 16px", fontWeight: 700, cursor: "pointer", fontSize: 14, transition: "all 0.2s"
+            }}
+          >
+            {showCreatePost ? "✕ Cancel" : "+ New Post"}
+          </button>
+        </div>
+
+        {/* Expandable Create Post */}
+        <div style={{
+          overflow: "hidden", transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+          maxHeight: showCreatePost ? 500 : 0, opacity: showCreatePost ? 1 : 0
+        }}>
+          <CreatePost fetchPosts={fetchPosts} user={user} />
+        </div>
+
+        {/* Feed Posts */}
+        {searchQuery.trim() ? (
+          <div>
+            <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, color: "var(--text)", marginBottom: 16 }}>Search Results</h3>
+            {isSearching ? (
+              <div style={{ color: "var(--text-muted)", fontSize: 15 }}>Searching...</div>
+            ) : (
+              <>
+                {searchResults?.users?.length > 0 && (
+                  <div style={{ marginBottom: 24, padding: "16px 20px", background: "var(--card-bg)", borderRadius: 20, border: "1px solid var(--border)" }}>
+                    <h4 style={{ margin: "0 0 12px", color: "var(--text)" }}>Users</h4>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                      {searchResults.users.map(u => (
+                         <div key={u.id} style={{ display: "flex", gap: 10, alignItems: "center", padding: "8px 12px", background: "var(--border-light)", borderRadius: 12 }}>
+                           <img src={u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.id}&backgroundColor=transparent`} alt="avatar" style={{width: 32, height: 32, borderRadius: "50%", background: "#1a1a2e"}}/>
+                           <span style={{ color: "var(--text)", fontWeight: 600 }}>{u.username}</span>
+                         </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {searchResults?.posts?.length > 0 ? (
+                  searchResults.posts.map(post => <PostCard key={post.id} post={post} fetchPosts={fetchPosts} user={user} />)
+                ) : (
+                  <div style={{ padding: 20, textAlign: "center", color: "var(--text-muted)" }}>No posts found for "{searchQuery}"</div>
+                )}
+              </>
+            )}
+          </div>
+        ) : postsLoading ? (
+          <div> {/* Skeleton loaders */}
+            {[1, 2, 3].map((n) => (
+              <div key={n} style={{ background: "var(--card-bg)", backdropFilter: "blur(20px)", borderRadius: 20, padding: 20, marginBottom: 20, border: "1px solid var(--border)", boxShadow: "0 10px 30px rgba(0,0,0,0.5)", animation: "pulse 2s infinite" }}>
+                <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--border)" }}></div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, justifyContent: "center" }}>
+                    <div style={{ width: 120, height: 12, borderRadius: 6, background: "var(--border)" }}></div>
+                    <div style={{ width: 80, height: 10, borderRadius: 5, background: "var(--border)" }}></div>
+                  </div>
                 </div>
-                <div
-                  style={{
-                    fontSize: "12px",
-                    opacity: isDarkMode ? 0.6 : 0.6,
-                    marginTop: "4px",
-                  }}
-                >
-                  {topic.posts} posts
-                </div>
+                <div style={{ width: "100%", height: 14, borderRadius: 7, background: "var(--border)", marginBottom: 12 }}></div>
+                <div style={{ width: "80%", height: 14, borderRadius: 7, background: "var(--border)", marginBottom: 16 }}></div>
+                <div style={{ height: 160, borderRadius: 12, background: "var(--border)" }}></div>
               </div>
             ))}
+          </div>
+        ) : posts.length === 0 ? (
+          <div style={{ background: "var(--card-bg)", backdropFilter: "blur(20px)", borderRadius: 20, padding: 40, textAlign: "center", border: "1px solid var(--border)", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
+            <div style={{ fontSize: 60, marginBottom: 16, filter: "drop-shadow(0 0 20px rgba(0,212,255,0.4))" }}>📭</div>
+            <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 24, fontWeight: 800, margin: "0 0 8px", color: "var(--text)" }}>It's quiet here...</h3>
+            <p style={{ color: "var(--text-muted)", marginBottom: 24, fontSize: 15 }}>Be the first to share something with the world.</p>
+            <button onClick={() => setShowCreatePost(true)} style={{ background: "linear-gradient(135deg, #00d4ff, #a855f7)", border: "none", color: "#fff", padding: "12px 24px", borderRadius: 12, fontWeight: 700, fontSize: 16, cursor: "pointer", boxShadow: "0 8px 24px rgba(0,212,255,0.3)" }}>
+              Create a Post
+            </button>
+          </div>
+        ) : (
+          posts.map((post) => (
+            <PostCard key={post.id} post={post} fetchPosts={fetchPosts} user={user} />
+          ))
+        )}
 
-            <h4
-              style={{
-                fontSize: "16px",
-                fontWeight: "600",
-                marginTop: "24px",
-                marginBottom: "12px",
-                color: isDarkMode ? "#00d4ff" : "#0099cc",
-              }}
+          </div>
+        </div>
+
+        {/* Right Sidebar */}
+        <div className={`feed-column-right ${rightCollapsed ? "collapsed" : ""}`}>
+          
+          <div className="glass-panel" style={{ marginBottom: 20, padding: 16 }}>
+            <div className="panel-header" style={{ marginBottom: 12 }}>
+              <h3 className="panel-title">Indent Bot</h3>
+              <button className="close-panel-btn" onClick={() => setRightCollapsed(true)} title="Close Panel">✕</button>
+            </div>
+            <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16, lineHeight: 1.5 }}>
+              No friends online? Talk to our friendly AI bot anytime you want!
+            </div>
+            <button 
+              onClick={() => setCurrentPage("chat")}
+              style={{ width: "100%", padding: "10px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #00d4ff, #a855f7)", color: "#fff", fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 12px rgba(0,212,255,0.3)" }}
             >
-              💡 Tips
-            </h4>
-            <div
-              style={{
-                padding: "12px 14px",
-                borderRadius: "8px",
-                background: isDarkMode
-                  ? "rgba(0, 212, 255, 0.05)"
-                  : "rgba(0, 0, 0, 0.05)",
-                fontSize: "13px",
-                lineHeight: "1.6",
-                color: isDarkMode ? "#d0d0d0" : "#666",
-              }}
-            >
-              ❤️ <strong>Double tap</strong> to like posts
-              <br />
-              💬 <strong>Comment</strong> on confessions
-              <br />
-              🔍 <strong>Search</strong> by UID or keywords
+              🤖 Chat with Bot
+            </button>
+          </div>
+
+          <div className="glass-panel" style={{ padding: 16 }}>
+            <div className="panel-header" style={{ marginBottom: 12 }}>
+              <h3 className="panel-title">Trending Topics</h3>
+            </div>
+            {[
+              { tag: "#tech", posts: "1.2k posts" },
+              { tag: "#gossip", posts: "856 posts" },
+              { tag: "#confessions", posts: "432 posts" }
+            ].map((topic) => (
+              <div key={topic.tag} className="topic-widget">
+                <div style={{ fontWeight: 700, color: "var(--text)", fontSize: 14 }}>{topic.tag}</div>
+                <div style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 4 }}>{topic.posts}</div>
+              </div>
+            ))}
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* Slide-in Hamburger Menu Menu (All screens use this now) */}
+      <div style={{
+        position: "fixed", inset: 0, pointerEvents: showMobileMenu ? "auto" : "none", zIndex: 900
+      }}>
+        {/* Backdrop */}
+        <div 
+          onClick={() => setShowMobileMenu(false)}
+          style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", opacity: showMobileMenu ? 1 : 0, transition: "opacity 0.3s" }} 
+        />
+        {/* Drawer */}
+        <div style={{
+          position: "absolute", top: 72, right: 0, bottom: 0, width: 280, maxWidth: "80vw",
+          background: "var(--card-bg)", backdropFilter: "blur(30px)", WebkitBackdropFilter: "blur(30px)",
+          borderLeft: "1px solid var(--border)", padding: 24, display: "flex", flexDirection: "column", gap: 32,
+          transform: showMobileMenu ? "translateX(0)" : "translateX(100%)", transition: "transform 0.4s cubic-bezier(0.19, 1, 0.22, 1)",
+          boxShadow: showMobileMenu ? "-10px 0 30px rgba(0,0,0,0.5)" : "none", overflowY: "auto"
+        }}>
+          
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--accent)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 12 }}>Menu</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {["Feed", "Explore", "Notifications", "Bookmarks", "Chat"].map((item, i) => (
+                <div key={item} 
+                  onClick={() => { if(item === "Chat") setCurrentPage("chat"); }}
+                  style={{
+                  padding: "12px 16px", borderRadius: 12, cursor: "pointer",
+                  background: i === 0 ? "var(--accent-bg)" : "transparent",
+                  color: i === 0 ? "var(--accent)" : "var(--text-muted)", fontWeight: 600, transition: "all 0.2s"
+                }}>{item}</div>
+              ))}
             </div>
           </div>
-        )}
+
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--accent)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 12 }}>Trending Topics</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {[
+                { tag: "#tech", posts: "1.2k posts" },
+                { tag: "#gossip", posts: "856 posts" },
+                { tag: "#confessions", posts: "432 posts" }
+              ].map((topic) => (
+                <div key={topic.tag} style={{ padding: "10px 14px", borderRadius: 12, background: "var(--border-light)", border: "1px solid var(--border)" }}>
+                  <div style={{ fontWeight: 700, color: "var(--text)", fontSize: 14 }}>{topic.tag}</div>
+                  <div style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 4 }}>{topic.posts}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
       </div>
-    </>
+
+      {showProfile && <Profile user={user} setShowProfile={setShowProfile} />}
+    </div>
   );
 }
 

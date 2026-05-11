@@ -4,12 +4,14 @@ import Signup from "./components/Signup";
 import Feed from "./components/Feed";
 import ResetPassword from "./components/ResetPassword";
 import Landing from "./components/Landing";
+import ChatPage from "./components/ChatPage";
 import { supabase } from "./supabaseClient";
 import { ThemeProvider } from "./context/ThemeContext";
+import "./App.css";
 
 function App() {
   const [user, setUser] = useState(null);
-  const [currentPage, setCurrentPage] = useState("landing"); // landing, login, signup, feed
+  const [currentPage, setCurrentPage] = useState("landing");
 
   useEffect(() => {
     const getUser = async () => {
@@ -19,7 +21,6 @@ function App() {
         setCurrentPage("feed");
       }
     };
-
     getUser();
   }, []);
 
@@ -34,28 +35,24 @@ function App() {
   if (user && currentPage === "feed") {
     return (
       <ThemeProvider>
-        <Feed user={user} setUser={setUser} />
+        <Feed user={user} setUser={setUser} setCurrentPage={setCurrentPage} />
+      </ThemeProvider>
+    );
+  }
+
+  if (user && currentPage === "chat") {
+    return (
+      <ThemeProvider>
+        <ChatPage user={user} setCurrentPage={setCurrentPage} />
       </ThemeProvider>
     );
   }
 
   return (
     <ThemeProvider>
-      {currentPage === "landing" && (
-        <Landing setCurrentPage={setCurrentPage} />
-      )}
-      {currentPage === "login" && (
-        <Login
-          setUser={setUser}
-          setCurrentPage={setCurrentPage}
-        />
-      )}
-      {currentPage === "signup" && (
-        <Signup
-          setUser={setUser}
-          setCurrentPage={setCurrentPage}
-        />
-      )}
+      {currentPage === "landing" && <Landing setCurrentPage={setCurrentPage} />}
+      {currentPage === "login" && <Login setUser={setUser} setCurrentPage={setCurrentPage} />}
+      {currentPage === "signup" && <Signup setUser={setUser} setCurrentPage={setCurrentPage} />}
     </ThemeProvider>
   );
 }

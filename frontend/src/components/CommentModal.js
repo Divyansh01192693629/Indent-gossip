@@ -191,12 +191,12 @@ function CommentModal({ post, setShowComments, isDarkMode, user, fetchPosts }) {
           onClick={() => handleLikeComment(c.id, isReply, isReply ? c.parentId : null)}
           style={{
             background: userVotes[`${post.id}-${c.id}`] === "like"
-              ? "rgba(0, 255, 136, 0.2)"
+              ? "rgba(255, 0, 110, 0.15)"
               : "none",
             border: userVotes[`${post.id}-${c.id}`] === "like"
-              ? "1px solid rgba(0, 255, 136, 0.8)"
-              : "1px solid rgba(0, 255, 136, 0.3)",
-            color: userVotes[`${post.id}-${c.id}`] === "like" ? "#00ff88" : "#00ff88",
+              ? "1px solid rgba(255, 0, 110, 0.5)"
+              : "1px solid rgba(255, 255, 255, 0.1)",
+            color: userVotes[`${post.id}-${c.id}`] === "like" ? "#ff006e" : "#8892b0",
             padding: "4px 10px",
             borderRadius: "6px",
             cursor: "pointer",
@@ -205,16 +205,16 @@ function CommentModal({ post, setShowComments, isDarkMode, user, fetchPosts }) {
             fontWeight: userVotes[`${post.id}-${c.id}`] === "like" ? "600" : "400",
           }}
           onMouseEnter={(e) => {
-            e.target.style.background = "rgba(0, 255, 136, 0.15)";
-            e.target.style.borderColor = "rgba(0, 255, 136, 0.8)";
+            e.target.style.background = "rgba(255, 0, 110, 0.15)";
+            e.target.style.borderColor = "rgba(255, 0, 110, 0.5)";
           }}
           onMouseLeave={(e) => {
             e.target.style.background = userVotes[`${post.id}-${c.id}`] === "like"
-              ? "rgba(0, 255, 136, 0.2)"
+              ? "rgba(255, 0, 110, 0.15)"
               : "none";
             e.target.style.borderColor = userVotes[`${post.id}-${c.id}`] === "like"
-              ? "1px solid rgba(0, 255, 136, 0.8)"
-              : "1px solid rgba(0, 255, 136, 0.3)";
+              ? "1px solid rgba(255, 0, 110, 0.5)"
+              : "1px solid rgba(255, 255, 255, 0.1)";
           }}
           title={userVotes[`${post.id}-${c.id}`] === "like" ? "Remove like" : "Like"}
         >
@@ -308,12 +308,12 @@ function CommentModal({ post, setShowComments, isDarkMode, user, fetchPosts }) {
                 : "1px solid rgba(0, 0, 0, 0.15)",
               background: isDarkMode
                 ? "rgba(255,255,255,0.03)"
-                : "rgba(0,0,0,0.03)",
+                : "rgba(0,0,0,0.02)",
               color: isDarkMode ? "#fff" : "#000",
               fontFamily: "inherit",
               fontSize: "12px",
               resize: "vertical",
-              minHeight: "40px",
+              minHeight: "35px",
               marginBottom: "8px",
               opacity: replyLoading ? 0.5 : 1,
             }}
@@ -365,41 +365,33 @@ function CommentModal({ post, setShowComments, isDarkMode, user, fetchPosts }) {
     <div
       style={{
         position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: isDarkMode
-          ? "rgba(0, 0, 0, 0.7)"
-          : "rgba(0, 0, 0, 0.5)",
+        top: 0, left: 0, right: 0, bottom: 0,
+        background: "rgba(0,0,0,0.78)",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
         zIndex: 3000,
-        backdropFilter: "blur(5px)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        animation: "slideUp 0.3s ease",
       }}
       onClick={() => setShowComments(false)}
     >
       <div
         style={{
-          background: isDarkMode
-            ? "linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(22, 33, 62, 0.95) 100%)"
-            : "linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(245, 245, 245, 0.95) 100%)",
-          borderRadius: "16px",
-          padding: window.innerWidth < 480 ? "16px" : "24px",
-          maxWidth: window.innerWidth < 480 ? "95vw" : window.innerWidth < 768 ? "90vw" : "550px",
-          width: window.innerWidth < 480 ? "95vw" : "90%",
-          maxHeight: window.innerWidth < 480 ? "85vh" : "75vh",
+          background: isDarkMode ? "rgba(13,13,35,0.97)" : "rgba(255,255,255,0.97)",
+          backdropFilter: "blur(30px)",
+          WebkitBackdropFilter: "blur(30px)",
+          borderRadius: 20,
+          padding: window.innerWidth < 480 ? "16px" : "20px",
+          maxWidth: window.innerWidth < 480 ? "95vw" : "480px",
+          width: "90%",
+          maxHeight: "70vh",
           overflow: "auto",
-          border: isDarkMode
-            ? "1px solid rgba(0, 212, 255, 0.2)"
-            : "1px solid rgba(0, 0, 0, 0.1)",
-          boxShadow: isDarkMode
-            ? "0 8px 32px rgba(0, 212, 255, 0.1)"
-            : "0 8px 32px rgba(0, 0, 0, 0.1)",
-          color: isDarkMode ? "#fff" : "#000",
-          transform: "perspective(1000px) rotateX(0deg)",
-          transition: "all 0.3s ease",
+          border: isDarkMode ? "1px solid rgba(0,212,255,0.18)" : "1px solid rgba(0,0,0,0.1)",
+          boxShadow: isDarkMode ? "0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(0,212,255,0.06), 0 0 60px rgba(0,212,255,0.04)" : "0 32px 80px rgba(0,0,0,0.1)",
+          color: isDarkMode ? "#ccd6f6" : "#2d3748",
+          position: "relative",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -408,7 +400,7 @@ function CommentModal({ post, setShowComments, isDarkMode, user, fetchPosts }) {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: "20px",
+            marginBottom: "16px",
           }}
         >
           <h3
@@ -418,6 +410,7 @@ function CommentModal({ post, setShowComments, isDarkMode, user, fetchPosts }) {
               backgroundClip: "text",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
+              fontSize: "18px",
             }}
           >
             💬 Comments ({comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0)})
@@ -429,7 +422,7 @@ function CommentModal({ post, setShowComments, isDarkMode, user, fetchPosts }) {
               border: "none",
               fontSize: "20px",
               cursor: "pointer",
-              color: isDarkMode ? "#00d4ff" : "#000",
+              color: isDarkMode ? "#00d4ff" : "#4a5568",
             }}
           >
             ✕
@@ -487,12 +480,12 @@ function CommentModal({ post, setShowComments, isDarkMode, user, fetchPosts }) {
                 : "1px solid rgba(0, 0, 0, 0.15)",
               background: isDarkMode
                 ? "rgba(255,255,255,0.05)"
-                : "rgba(0,0,0,0.05)",
+                : "rgba(0,0,0,0.02)",
               color: isDarkMode ? "#fff" : "#000",
               fontFamily: "inherit",
               fontSize: "13px",
               resize: "vertical",
-              minHeight: "60px",
+              minHeight: "45px",
               marginBottom: "10px",
               opacity: loading ? 0.5 : 1,
             }}
