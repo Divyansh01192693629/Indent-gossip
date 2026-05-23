@@ -2,6 +2,7 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://Divyansh01192693629.github.io/Indent-gossip",
   "dependencies": {
     "@supabase/supabase-js": "^2.102.1",
     "@testing-library/dom": "^10.4.1",
