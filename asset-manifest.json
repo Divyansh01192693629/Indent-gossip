@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/Indent-gossip/static/css/main.9a973d0e.css",
-    "main.js": "/Indent-gossip/static/js/main.6e064f46.js",
+    "main.js": "/Indent-gossip/static/js/main.74a52a3a.js",
     "static/js/453.825386d9.chunk.js": "/Indent-gossip/static/js/453.825386d9.chunk.js",
     "index.html": "/Indent-gossip/index.html",
     "main.9a973d0e.css.map": "/Indent-gossip/static/css/main.9a973d0e.css.map",
-    "main.6e064f46.js.map": "/Indent-gossip/static/js/main.6e064f46.js.map",
+    "main.74a52a3a.js.map": "/Indent-gossip/static/js/main.74a52a3a.js.map",
     "453.825386d9.chunk.js.map": "/Indent-gossip/static/js/453.825386d9.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.9a973d0e.css",
-    "static/js/main.6e064f46.js"
+    "static/js/main.74a52a3a.js"
   ]
 }
