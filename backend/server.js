@@ -13,7 +13,26 @@ const BOT_USER_ID = "00000000-0000-0000-0000-000000000001";
 const app = express();
 
 // Middleware
-app.use(cors());
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:5000",
+  "https://divyansh01192693629.github.io",
+  process.env.FRONTEND_URL, // optional override via env
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, Postman, curl)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.some(o => origin.startsWith(o))) {
+      return callback(null, true);
+    }
+    callback(new Error(`CORS blocked: ${origin}`));
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+}));
 app.use(express.json());
 
 // Multer setup
@@ -24,8 +43,8 @@ app.get("/", (req, res) => {
   res.send("Server running 🚀");
 });
 
-// 🔹 UUID Login
-app.post("/login", (req, res) => {
+// 🔹 UUID Generator (used internally)
+app.get("/generate-uuid", (req, res) => {
   const uuid = uuidv4();
   res.json({ uuid });
 });
@@ -313,7 +332,7 @@ const callGemini = async (prompt) => {
     throw new Error("Gemini API key not configured");
   }
   const response = await axios.post(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
     { contents: [{ parts: [{ text: prompt }] }] },
     { headers: { "Content-Type": "application/json" }, timeout: 12000 }
   );
@@ -338,9 +357,9 @@ const callOpenAI = async (systemPrompt, userMsg) => {
   return response.data.choices[0].message.content.trim();
 };
 
-// 🔹 Background Task: Every 10-Minute Joke Auto-Poster
+// 🔹 Background Task: Every 10-Second Joke Auto-Poster
 const startJokeBot = () => {
-  // Post immediately, then every 10 minutes
+  // Post immediately, then every 10 seconds
   const postJoke = async () => {
     try {
       let joke;
@@ -387,7 +406,7 @@ const startJokeBot = () => {
   };
 
   postJoke(); // Run immediately on startup
-  setInterval(postJoke, 10 * 60 * 1000); // Then every 10 minutes
+  setInterval(postJoke, 10 * 1000); // Then every 10 seconds
 }
 
 // 🔹 Like Post
