@@ -207,7 +207,7 @@ function PostCard({ post, fetchPosts, user }) {
       {post.image_url && (
         <div style={{ margin: "16px -20px 20px -20px", display: "flex", justifyContent: "center", background: "rgba(0,0,0,0.3)", position: "relative" }}>
           <img
-            src={post.image_url}
+            src={post.image_url.startsWith('/') && !post.image_url.startsWith('//') ? `${process.env.PUBLIC_URL || ''}${post.image_url}` : post.image_url}
             alt="post"
             style={{ width: "100%", maxHeight: 500, objectFit: "contain", display: "block" }}
             onDoubleClick={handleLike}
