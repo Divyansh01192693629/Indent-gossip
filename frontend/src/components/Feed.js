@@ -6,7 +6,7 @@ import Profile from "./Profile";
 import axios from "axios";
 import "./Feed.css";
 
-const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
+const API = process.env.REACT_APP_API_URL || "http://localhost:5005";
 
 function Feed({ user, setUser, setCurrentPage }) {
   const [posts, setPosts] = useState([]);

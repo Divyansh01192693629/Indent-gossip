@@ -15,7 +15,7 @@ const app = express();
 // Middleware
 const allowedOrigins = [
   "http://localhost:3000",
-  "http://localhost:5000",
+  "http://localhost:5005",
   "https://divyansh01192693629.github.io",
   process.env.FRONTEND_URL, // optional override via env
 ].filter(Boolean);
@@ -317,7 +317,7 @@ async function seedBotUser() {
 }
 
 // 🔹 Start Server & Background Worker
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5005;
 app.listen(PORT, () => {
   console.log(`Server started on ${PORT} 🚀`);
   seedBotUser(); // ensure indent-bot-id exists in users table

@@ -3,7 +3,7 @@ import axios from "axios";
 import { ThemeContext } from "../context/ThemeContext";
 import FriendRequests from "./FriendRequests";
 
-const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
+const API = process.env.REACT_APP_API_URL || "http://localhost:5005";
 const shortId = (id) => id ? `UID-${id.slice(0, 6).toUpperCase()}` : "Unknown";
 
 function Navbar({ setUser, showMobileMenu, setShowMobileMenu, user, setCurrentPage, setShowProfile, onSearch }) {
