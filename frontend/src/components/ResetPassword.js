@@ -30,7 +30,7 @@ function ResetPassword() {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) { alert(error.message); return; }
       alert("Password updated successfully ✅");
-      window.location.href = "/";
+      window.location.href = "/Indent-gossip/";
     } finally {
       setLoading(false);
     }

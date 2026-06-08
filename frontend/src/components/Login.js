@@ -43,7 +43,7 @@ function Login({ setUser, setCurrentPage }) {
     if (!email) { alert("Enter email first ⚠️"); return; }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: "http://localhost:3000" });
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
       if (error) { alert(error.message); return; }
       alert("If this email exists, reset link sent 📩");
     } finally {

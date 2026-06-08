@@ -9,7 +9,7 @@ function CreatePost({ fetchPosts, user }) {
   const [loading, setLoading] = useState(false);
   const [loadingMsg, setLoadingMsg] = useState("Posting...");
   const { isDarkMode } = useContext(ThemeContext);
-  const API = process.env.REACT_APP_API_URL;
+  const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];

@@ -3,6 +3,8 @@ import axios from "axios";
 import { ThemeContext } from "../context/ThemeContext";
 import { playNotificationSound } from "../utils/audioNotification";
 
+const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
+
 function CommentModal({ post, setShowComments, isDarkMode, user, fetchPosts }) {
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState([]);
@@ -20,7 +22,7 @@ function CommentModal({ post, setShowComments, isDarkMode, user, fetchPosts }) {
     setFetchLoading(true);
     try {
       console.log("Fetching comments for post:", post.id);
-      const { data } = await axios.get(`http://localhost:5000/comments/${post.id}`);
+      const { data } = await axios.get(`${API}/comments/${post.id}`);
       console.log("Comments received:", data);
       setComments(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -38,7 +40,7 @@ function CommentModal({ post, setShowComments, isDarkMode, user, fetchPosts }) {
 
     setLoading(true);
     try {
-      await axios.post(`http://localhost:5000/add-comment/${post.id}`, {
+      await axios.post(`${API}/add-comment/${post.id}`, {
         text: comment,
         user_id: user?.id,
       });
@@ -60,7 +62,7 @@ function CommentModal({ post, setShowComments, isDarkMode, user, fetchPosts }) {
 
     setReplyLoading(true);
     try {
-      await axios.post(`http://localhost:5000/add-reply/${post.id}/${parentCommentId}`, {
+      await axios.post(`${API}/add-reply/${post.id}/${parentCommentId}`, {
         text: replyText,
         user_id: user?.id,
       });
@@ -87,7 +89,7 @@ function CommentModal({ post, setShowComments, isDarkMode, user, fetchPosts }) {
     if (currentVote === "like") {
       setUserVotes({ ...userVotes, [voteKey]: null });
       try {
-        await axios.post(`http://localhost:5000/unlike-comment/${post.id}/${commentId}`, {
+        await axios.post(`${API}/unlike-comment/${post.id}/${commentId}`, {
           user_id: user?.id,
         });
         fetchComments();
@@ -98,7 +100,7 @@ function CommentModal({ post, setShowComments, isDarkMode, user, fetchPosts }) {
       // Like the comment (remove dislike if any)
       setUserVotes({ ...userVotes, [voteKey]: "like" });
       try {
-        await axios.post(`http://localhost:5000/like-comment/${post.id}/${commentId}`, {
+        await axios.post(`${API}/like-comment/${post.id}/${commentId}`, {
           user_id: user?.id,
           removeDislike: currentVote === "dislike",
         });
@@ -118,7 +120,7 @@ function CommentModal({ post, setShowComments, isDarkMode, user, fetchPosts }) {
     if (currentVote === "dislike") {
       setUserVotes({ ...userVotes, [voteKey]: null });
       try {
-        await axios.post(`http://localhost:5000/undislike-comment/${post.id}/${commentId}`, {
+        await axios.post(`${API}/undislike-comment/${post.id}/${commentId}`, {
           user_id: user?.id,
         });
         fetchComments();
@@ -129,7 +131,7 @@ function CommentModal({ post, setShowComments, isDarkMode, user, fetchPosts }) {
       // Dislike the comment (remove like if any)
       setUserVotes({ ...userVotes, [voteKey]: "dislike" });
       try {
-        await axios.post(`http://localhost:5000/dislike-comment/${post.id}/${commentId}`, {
+        await axios.post(`${API}/dislike-comment/${post.id}/${commentId}`, {
           user_id: user?.id,
           removeLike: currentVote === "like",
         });

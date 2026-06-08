@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 
-const API = process.env.REACT_APP_API_URL;
+const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 // Must match BOT_USER_ID in backend/server.js
 const BOT_USER_ID = "00000000-0000-0000-0000-000000000001";
