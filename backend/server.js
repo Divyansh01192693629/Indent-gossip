@@ -357,9 +357,9 @@ const callOpenAI = async (systemPrompt, userMsg) => {
   return response.data.choices[0].message.content.trim();
 };
 
-// 🔹 Background Task: Every 10-Second Joke Auto-Poster
+// 🔹 Background Task: Every 2-Minute Joke Auto-Poster
 const startJokeBot = () => {
-  // Post immediately, then every 10 seconds
+  // Post immediately, then every 2 minutes
   const postJoke = async () => {
     try {
       let joke;
@@ -375,12 +375,21 @@ const startJokeBot = () => {
         );
       }
 
+      // Randomly pick a dummy image
+      const images = [
+        "/dummy-images/joke1.png",
+        "/dummy-images/joke2.png",
+        "/dummy-images/joke3.png"
+      ];
+      const randomImage = images[Math.floor(Math.random() * images.length)];
+
       const { error: insertErr } = await supabase.from("posts").insert([{
         user_id: BOT_USER_ID,
-        content: `🤖 Joke of the moment:\n\n${joke}`
+        content: `🤖 Joke of the moment:\n\n${joke}`,
+        image_url: randomImage
       }]);
       if (insertErr) throw new Error("DB insert failed: " + insertErr.message);
-      console.log("🤖 Indent Bot auto-posted a joke!");
+      console.log("🤖 Indent Bot auto-posted a joke with image!");
     } catch (err) {
       console.log("Error posting bot joke:", err.message);
       // Post a fallback joke from a static list
@@ -392,13 +401,22 @@ const startJokeBot = () => {
         "🤖 A SQL query walks into a bar, walks up to two tables and asks... Can I join you? 😄",
       ];
       const fallback = fallbackJokes[Math.floor(Math.random() * fallbackJokes.length)];
+      
+      const fallbackImages = [
+        "/dummy-images/joke1.png",
+        "/dummy-images/joke2.png",
+        "/dummy-images/joke3.png"
+      ];
+      const randomFallbackImage = fallbackImages[Math.floor(Math.random() * fallbackImages.length)];
+
       try {
         const { error: fbErr } = await supabase.from("posts").insert([{
           user_id: BOT_USER_ID,
-          content: fallback
+          content: fallback,
+          image_url: randomFallbackImage
         }]);
         if (fbErr) console.log("Failed to insert fallback joke (DB):", fbErr.message);
-        else console.log("🤖 Indent Bot posted a fallback joke.");
+        else console.log("🤖 Indent Bot posted a fallback joke with image.");
       } catch (dbErr) {
         console.log("Failed to insert fallback joke:", dbErr.message);
       }
@@ -406,7 +424,7 @@ const startJokeBot = () => {
   };
 
   postJoke(); // Run immediately on startup
-  setInterval(postJoke, 10 * 1000); // Then every 10 seconds
+  setInterval(postJoke, 2 * 60 * 1000); // Then every 2 minutes
 }
 
 // 🔹 Like Post
